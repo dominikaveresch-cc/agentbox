@@ -68,7 +68,7 @@ RUN ARCH=$(dpkg --print-architecture) && \
 # Create non-root user
 ARG USER_ID=1000
 ARG GROUP_ID=1000
-ARG USERNAME=claude
+ARG USERNAME=agent
 
 RUN groupadd -g ${GROUP_ID} ${USERNAME} || true && \
     useradd -m -u ${USER_ID} -g ${GROUP_ID} -s /bin/zsh ${USERNAME} && \

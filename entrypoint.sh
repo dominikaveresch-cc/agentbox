@@ -27,34 +27,34 @@ if [ -n "$PROJECT_DIR" ] && [ ! -d "$PROJECT_DIR/.venv" ] && [ -f "$PROJECT_DIR/
 fi
 
 # Set proper permissions on mounted SSH directory if it exists
-if [ -d "/home/claude/.ssh" ]; then
+if [ -d "/home/agent/.ssh" ]; then
     # Ensure correct permissions for SSH directory and files
-    chmod 700 /home/claude/.ssh 2>/dev/null || true
-    chmod 600 /home/claude/.ssh/* 2>/dev/null || true
-    chmod 644 /home/claude/.ssh/*.pub 2>/dev/null || true
-    chmod 644 /home/claude/.ssh/authorized_keys 2>/dev/null || true
-    chmod 644 /home/claude/.ssh/known_hosts 2>/dev/null || true
+    chmod 700 /home/agent/.ssh 2>/dev/null || true
+    chmod 600 /home/agent/.ssh/* 2>/dev/null || true
+    chmod 644 /home/agent/.ssh/*.pub 2>/dev/null || true
+    chmod 644 /home/agent/.ssh/authorized_keys 2>/dev/null || true
+    chmod 644 /home/agent/.ssh/known_hosts 2>/dev/null || true
     echo "✅ SSH directory permissions configured"
 fi
 
 if [ -d "/tmp/host_direnv_allow" ]; then
-    mkdir -p /home/claude/.local/share/direnv/allow
-    cp /tmp/host_direnv_allow/* /home/claude/.local/share/direnv/allow/ 2>/dev/null && \
+    mkdir -p /home/agent/.local/share/direnv/allow
+    cp /tmp/host_direnv_allow/* /home/agent/.local/share/direnv/allow/ 2>/dev/null && \
         echo "✅ Direnv approvals copied from host"
 fi
 
 # Set up git config for commits inside container
 if [ -f "/tmp/host_gitconfig" ]; then
-    cp /tmp/host_gitconfig /home/claude/.gitconfig
+    cp /tmp/host_gitconfig /home/agent/.gitconfig
 else
-    cat > /home/claude/.gitconfig << 'EOF'
+    cat > /home/agent/.gitconfig << 'EOF'
 [user]
-    email = claude@agentbox
-    name = Claude (AgentBox)
+    email = agent@agentbox
+    name = AI Agent (AgentBox)
 [init]
     defaultBranch = main
 EOF
-    echo "ℹ️  Using default git identity (claude@agentbox). Configure ~/.gitconfig on host to customize."
+    echo "ℹ️  Using default git identity (agent@agentbox). Configure ~/.gitconfig on host to customize."
 fi
 
 # Check if project has MCP servers and show reminder

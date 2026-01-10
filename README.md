@@ -96,7 +96,7 @@ Note that Claude will convert your git remotes to https, ssh remotes don't work 
 
 ## Git Configuration
 
-AgentBox copies your host `~/.gitconfig` into the container on each startup. If you don't have a host gitconfig, it uses `claude@agentbox` as the default identity.
+AgentBox copies your host `~/.gitconfig` into the container on each startup. If you don't have a host gitconfig, it uses `agent@agentbox` as the default identity.
 
 ## SSH Configuration
 

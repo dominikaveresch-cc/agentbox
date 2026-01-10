@@ -110,7 +110,7 @@ build_image() {
     if docker build \
         --build-arg USER_ID="${user_id}" \
         --build-arg GROUP_ID="${group_id}" \
-        --build-arg USERNAME="claude" \
+        --build-arg USERNAME="agent" \
         --build-arg BUILD_TIMESTAMP=${build_timestamp} \
         --label "agentbox.hash=${combined_hash}" \
         --label "agentbox.version=1.0.0" \
@@ -278,7 +278,7 @@ run_container() {
     # Mount dedicated AgentBox SSH directory
     local agentbox_ssh="${HOME}/.agentbox/ssh"
     if [[ -d "${agentbox_ssh}" ]]; then
-        mount_opts+=(-v "${agentbox_ssh}:/home/claude/.ssh:rw")
+        mount_opts+=(-v "${agentbox_ssh}:/home/agent/.ssh:rw")
         log_info "AgentBox SSH directory mounted (read-write)"
     else
         log_warning "SSH not configured. Run 'agentbox ssh-init' to enable SSH operations."
@@ -289,10 +289,10 @@ run_container() {
     mkdir -p "${cache_dir}/npm" "${cache_dir}/pip" "${cache_dir}/maven" "${cache_dir}/gradle"
 
     mount_opts+=(
-        -v "${cache_dir}/npm:/home/claude/.npm"
-        -v "${cache_dir}/pip:/home/claude/.cache/pip"
-        -v "${cache_dir}/maven:/home/claude/.m2"
-        -v "${cache_dir}/gradle:/home/claude/.gradle"
+        -v "${cache_dir}/npm:/home/agent/.npm"
+        -v "${cache_dir}/pip:/home/agent/.cache/pip"
+        -v "${cache_dir}/maven:/home/agent/.m2"
+        -v "${cache_dir}/gradle:/home/agent/.gradle"
     )
 
     # Mount per-project persistent data
@@ -302,8 +302,8 @@ run_container() {
 
     # Mount history directory (not individual files to avoid file locking issues)
     mount_opts+=(
-        -v "${history_dir}:/home/claude/.shell_history"
-        --env "HISTFILE=/home/claude/.shell_history/zsh_history"
+        -v "${history_dir}:/home/agent/.shell_history"
+        --env "HISTFILE=/home/agent/.shell_history/zsh_history"
     )
 
     # Use Docker named volume for Claude config (like Anthropic's devcontainer)
@@ -335,10 +335,10 @@ run_container() {
         fi
     fi
 
-    mount_opts+=(-v "${claude_volume_name}:/home/claude/.claude")
+    mount_opts+=(-v "${claude_volume_name}:/home/agent/.claude")
 
     # Set Claude config directory environment variable
-    mount_opts+=(--env "CLAUDE_CONFIG_DIR=/home/claude/.claude")
+    mount_opts+=(--env "CLAUDE_CONFIG_DIR=/home/agent/.claude")
 
     log_info "Claude CLI configuration mounted"
 
