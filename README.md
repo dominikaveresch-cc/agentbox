@@ -2,67 +2,63 @@
 
 # AgentBox
 
-A Docker-based development environment for running Claude CLI in a more safe, isolated fashion. This makes it less dangerous to use YOLO mode (`--dangerously-skip-permissions`), which is, in my opinion, the only way to use AI agents.
+A Docker-based development environment for running agentic coding tools in a more safe, isolated fashion. This makes it less dangerous to give your agent full permissions (YOLO mode / `--dangerously-skip-permissions`), which is, in my opinion, the only way to use AI agents.
 
 ## Features
 
-- **Shares project directory with host**: Maps a volume with the source code so that you can see and modify the agent's changes on the host machine - just like if you were running Claude without a container.
-- **Multi-Directory Support**: Mount additional project directories for cross-project development
+- **Shares project directory with host**: Maps a volume with the source code so that you can see and modify the agent's changes on the host machine - just like if you were running your tool without a container.
+- **Multi-Tool Support**: All agentic coding tools are supported, some built-in, others [via prompt](#adding-tools).
 - **Unified Development Environment**: Single Docker image with Python, Node.js, Java, and Shell support
-- **Automatic Rebuilds**: Detects changes to Dockerfile/entrypoint and rebuilds automatically
-- **Per-Project Isolation**: Each project directory gets its own isolated container environment
-- **Persistent Data**: Package caches and shell history persist between sessions
-- **Claude CLI Integration**: Built-in support for Claude CLI with per-project authentication
-- **SSH Support**: Dedicated SSH directory for secure Git operations
+- **Isolated SSH**: Dedicated SSH directory for secure Git operations
+- **Low-Maintenance Philosophy**: Always uses latest LTS tool versions, rebuilds container automatically when necessary
 
 ## Requirements
 
 - **Docker**: Must be installed and running
 - **Bash 4.0+**: macOS ships with Bash 3.2, I recommend upgrading via Homebrew (`brew install bash`).
 
-## Multi-Directory Support
+## Installation and Quick Start
 
-AgentBox supports mounting additional directories for scenarios where your agent needs access to multiple projects:
-
-```bash
-# Mount a single additional directory
-agentbox --add-dir ~/other-project
-
-# Mount multiple directories (repeatable flag)
-agentbox --add-dir ~/proj1 --add-dir ~/proj2 --add-dir ~/proj3
-
-# Works with shell mode too
-agentbox --add-dir ~/library-code shell
-```
-
-**How it works:**
-- Your current directory is always mounted as `/workspace`
-- Additional directories are mounted using their folder names (e.g., `/foo`, `/bar`)
-- All directories are writable - changes sync back to the host
-- The mounting order follows the order you specify in the flag
-
-## Installation
-
-1. Clone AgentBox to your preferred location
+1. Clone AgentBox to your preferred location (e.g. `~/code/agentbox/agentbox`)
 2. Ensure Docker is installed and running
 3. Make the script executable: `chmod +x agentbox`
-4. Optionally add to your PATH for global access
+4. (Strongly recommended) add an alias for global access - e.g. alias `agentbox` to `~/code/agentbox/agentbox`.
+5. Run `agentbox` from your desired working directory (wherever you would normally start your agentic coding tool).
 
-## Quick Start
+## CLI Agent Support
+
+- claude code: built-in
+- opencode: built-in
+- any other agents (copilot CLI, Aider, Cursor CLI...): easily add it yourself using the prompt at [docs/prompts/add-tool.md](docs/prompts/add-tool.md).
+
+### Adding tools
+
+Start your coding agent in the agentbox directory and issue this (example) prompt:
+> Add support for Copilot CLI to this project using the instructions at @docs/prompts/add-tool.md.
+
+Then you can go to your project directory and run (e.g.) `agentbox --tool copilot`. Thanks to [Felix Medam](https://github.com/SputnikTea) for this very cool idea.
+
+## Helpful Commands
 
 ```bash
-# Show available commands
-agentbox --help
-
 # Start Claude CLI in container (--dangerously-skip-permissions is automatically included)
 agentbox
+
+# Use OpenCode instead of Claude
+agentbox --tool opencode
+
+# Or set via environment variable
+AGENTBOX_TOOL=opencode agentbox
+
+# Show available commands
+agentbox --help
 
 # Non-agentbox CLI flags are passed through to claude.
 # For example, to continue the most recent session
 agentbox -c
 
 # Mount additional directories for multi-project access
-agentbox --add-dir ~/proj1 --add-dir ~/proj2  # Multiple directories
+agentbox --add-dir ~/proj1 --add-dir ~/proj2
 
 # Start shell with sudo privileges
 agentbox shell --admin
@@ -70,6 +66,8 @@ agentbox shell --admin
 # Set up SSH keys for AgentBox
 agentbox ssh-init
 ```
+
+**Note**: Tool selection via `--tool` flag takes precedence over the `AGENTBOX_TOOL` environment variable.
 
 ## How It Works
 
@@ -87,7 +85,8 @@ Single Dockerfile → Build once → agentbox:latest image
 Persistent data (survives container removal):
   Cache: ~/.cache/agentbox/agentbox-<hash>/
   History: ~/.agentbox/projects/agentbox-<hash>/history/
-  Claude: Docker volume agentbox-claude-<hash>
+  Claude: ~/.claude
+  OpenCode: ~/.config/opencode and ~/.local/share/opencode
 ```
 
 ## Languages and Tools
@@ -99,6 +98,7 @@ The unified Docker image includes:
 - **Java**: Latest LTS via SDKMAN with Gradle
 - **Shell**: Zsh (default) and Bash with common utilities
 - **Claude CLI**: Pre-installed with per-project authentication
+- **OpenCode**: Pre-installed as an alternative AI coding tool
 
 ## Authenticating to Git or other SCC Providers
 
@@ -109,14 +109,14 @@ The `gh` tool is included in the image and can be used for all GitHub operations
 - Create a .env file at the root of your project repository with entry `GH_TOKEN=<token>`
 - Add some instructions to the CLAUDE.md file, telling it to use the `gh` tool for Git operations. You can see a slightly more complicated example in this repo, there is a sub-agent for git operations in .claude/agents and instructions in CLAUDE.md to remember to use agents.
 
-Note that Claude will convert your git remotes to https, ssh remotes don't work with tokens.
+You or your agent should convert ssh git remotes to https, ssh remotes don't work with tokens.
 
 ### GitLab
  The `glab` tool is included in the image. You can use it with a GitLab token for API operations, but not for git operations as far as I know. So for GitLab I recommend the SSH configuration detailed below.
 
 ## Git Configuration
 
-AgentBox copies your host `~/.gitconfig` into the container on each startup. If you don't have a host gitconfig, it uses `claude@agentbox` as the default identity.
+AgentBox copies your host `~/.gitconfig` into the container on each startup. If you don't have a host gitconfig, it uses `agent@agentbox` as the default identity.
 
 ## SSH Configuration
 
@@ -133,9 +133,11 @@ This will:
 3. Generate a new Ed25519 key pair (if preferred, delete them and manually place your desired SSH keys in `~/.agentbox/ssh/`).
 
 ### Environment Variables
-If a `.env` file exists in your project directory, the environment variables defined there will automatically be loaded into the container.
+Environment variables are loaded from `.env` files in this order (later overrides earlier):
+1. `~/.agentbox/.env` (global)
+2. `<project-dir>/.env` (project-specific)
 
-AgentBox also includes `direnv` support - if you have a `.envrc` file in your project directory, it will be automatically evaluated inside the container if you have `direnv allow`ed it on your host machine.
+AgentBox includes `direnv` support - `.envrc` files are evaluated if `direnv allow`ed on the host.
 
 ## MCP Server Configuration
 
@@ -163,33 +165,16 @@ Package manager caches are stored in `~/.cache/agentbox/<container-name>/`:
 ### Shell History
 Zsh history is preserved in `~/.agentbox/projects/<container-name>/history`
 
-### Claude CLI Authentication
-Authentication data is stored in Docker named volumes (`agentbox-claude-<hash>`), providing:
-- Per-project Claude CLI configuration
-- Persistent authentication across container restarts
-- Isolation between different projects
+### Tool Authentication
 
-## Volume Management
+Both tools use bind mounts to share authentication across all AgentBox projects:
 
-### Listing Volumes
-```bash
-# List all AgentBox volumes
-docker volume ls | grep agentbox-claude
-```
+**Claude CLI**:
+- `~/.claude` mounted at `/home/agent/.claude`
 
-### Cleanup
-```bash
-# Remove specific project's authentication
-docker volume rm agentbox-claude-<hash>
-
-# Remove all AgentBox volumes (clears all authentication)
-docker volume ls -q | grep agentbox-claude | xargs docker volume rm
-
-# Full cleanup (removes image and optionally cached data)
-agentbox --cleanup
-```
-
-**Note**: Removing volumes only affects authentication - your project files remain untouched.
+**OpenCode**:
+- Config: `~/.config/opencode` mounted at `/home/agent/.config/opencode`
+- Auth: `~/.local/share/opencode` mounted at `/home/agent/.local/share/opencode`
 
 ## Advanced Usage
 
@@ -227,7 +212,6 @@ AgentBox began as a simplified replacement for [ClaudeBox](https://github.com/Rc
 | Setup | Automatic | Manual configuration |
 
 ## Support and Contributing
-I make no guarantee to support this project in the long term. Feel free to create issues and submit PRs. I like to think that I will attend to them. The project is designed to be understandable enough that if you need specific custom changes, which you may well do, you can fork or just make them locally for yourself. Theoretically you could easily this project to other AI Agents, for example.
+I make no guarantee to support this project in the future, however the history is positive: I've actively supported it since September 2025. Feel free to create issues and submit PRs. The project is designed to be understandable enough that if you need specific custom changes which we don't want centrally, you can fork or just make them locally for yourself.
 
-If you do contribute, consider that AgentBox is designed to be simple and maintainable. The value of new features will always be weighed against the added complexity.
-
+If you do contribute, consider that AgentBox is designed to be simple and maintainable. The value of new features will always be weighed against the added complexity. Try to find the simplest possible way to get things done and control the AI's desire to write such bloated doco.
